@@ -15,19 +15,22 @@
 #define HOST	"localhost"
 
 using namespace httpserver;
-webserver ws = create_webserver(PORT).start_method(http::http_utils::INTERNAL_SELECT).max_threads(5);
+webserver ws = create_webserver(PORT).start_method(http::http_utils::INTERNAL_SELECT);
 
 class fuzz_resource : public http_resource {
 public:
-	const std::shared_ptr<http_response> render(const http_request&) {
-		return std::shared_ptr<http_response>(new string_response("Hello World!!!", 200));
+	const std::shared_ptr<http_response> render(const http_request& req) {
+		std::stringstream ss;
+		for (unsigned int i = 0; i < req.get_path_pieces().size(); i++)
+			ss << req.get_path_piece(i) << ",";
+		return std::shared_ptr<http_response>(new string_response(ss.str(), 200));
 	}
 }hwr;
 
 class args_resource: public http_resource {
 public:
 	const std::shared_ptr<http_response> render(const http_request& req) {
-		return std::shared_ptr<http_response>(new string_response("ARGS: " + req.get_arg("arg1")));
+		return std::shared_ptr<http_response>(new string_response("ARGS: " + req.get_arg("arg1") + "and" + req.get_arg("arg2")));
 	}
 }agr;
 
@@ -86,22 +89,25 @@ void read_response(int sockfd) {
 	bytes = read(sockfd,response , 200);
 	if (bytes < 0)
 		error("ERROR reading response from socket");
-
-	//printf("%s\n", response);
+#if PRINT_RESPONSE
+	printf("%s\n", response);
+#endif
 }
 
 extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
-	//ws.register_resource("(.*)", &hwr);
-	ws.register_resource("{arg1|[A-Z]+}", &agr);
-	//ws.register_resource("{arg1|(.*)}", &agr);
+	ws.register_resource("{arg1|[A-Z]+}/{arg2|(.*)}", &agr);
+	ws.register_resource(R"(.*)", &hwr);
 	hwr.allow_all();
+	agr.allow_all();
 	return 0;
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 	int sockfd;
 
+	//if (size)
+		//ws.register_resource(reinterpret_cast<const char *>(data), &agr);
 	/* Start the server */
 	ws.start(false);
 
