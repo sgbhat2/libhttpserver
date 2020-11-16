@@ -107,6 +107,11 @@ extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 	int sockfd;
 
+	if (memchr(data, '\n', size))
+		return 0;
+
+	if (memchr(data, '\r', size))
+		return 0;
 	//if (size)
 		//ws.register_resource(reinterpret_cast<const char *>(data), &agr);
 	/* Start the server */
