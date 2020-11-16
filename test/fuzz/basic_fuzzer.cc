@@ -7,6 +7,7 @@
 #include <netdb.h>
 
 #include <iostream>
+#include <sstream>
 #include <stdint.h>
 #include <stddef.h>
 #include <httpserver.hpp>
