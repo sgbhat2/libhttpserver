@@ -323,6 +323,11 @@ size_t http_unescape(std::string& val)
                     (1 == sscanf (val.substr(rpos + 1).c_str(), "%2X", &num))
                 )
                 {
+		    // Handle malformed inputs like "ab%f"
+		    if (rpos + 3 > val.length()) {
+			    val[wpos] = val[rpos] = '\0';
+			    break;
+		    }
                     val[wpos] = (unsigned char) num;
                     wpos++;
                     rpos += 3;
