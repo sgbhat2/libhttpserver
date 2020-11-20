@@ -1,3 +1,29 @@
+/*
+ * Build steps:
+ * export CC=clang
+ * export CXX=clang++
+ * export CFLAGS="-O1 -fno-omit-frame-pointer -gline-tables-only -fsanitize=address \
+ *  -fsanitize-address-use-after-scope -fsanitize=fuzzer-no-link"
+ * export CXXFLAGS="-O1 -fno-omit-frame-pointer -gline-tables-only -fsanitize=address \
+ * -fsanitize-address-use-after-scope -fsanitize=fuzzer-no-link"
+ *
+ * cd libmicrohttpd-0.9.71/
+ * make clean
+ * ./configure
+ * make && sudo make install
+ *
+ * cd ../libhttpserver
+ * rm -rf build/*
+ * cd build
+ * ../configure
+ * make && sudo make install
+ *
+ * cd libhttpserver/test/fuzz
+ * clang++ -O1 -fno-omit-frame-pointer -gline-tables-only -fsanitize=address -fsanitize-address-use-after-scope -fsanitize=fuzzer-no-link  basic_fuzzer.cc -o basic_fuzzer -fsanitize=fuzzer,undefined  -L/usr/local/lib/ -lhttpserver -lmicrohttpd -I../../src/httpserver -I../../src/
+ *
+ * To run:
+ * ./basic_fuzzer
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
