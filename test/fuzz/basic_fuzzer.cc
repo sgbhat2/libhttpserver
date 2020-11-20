@@ -24,6 +24,7 @@
  * To run:
  * ./basic_fuzzer
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -31,6 +32,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 
 #include <iostream>
 #include <sstream>
@@ -39,7 +41,6 @@
 #include <httpserver.hpp>
 
 #define	PORT	8080
-#define HOST	"localhost"
 
 using namespace httpserver;
 webserver ws = create_webserver(PORT).start_method(http::http_utils::INTERNAL_SELECT);
@@ -67,25 +68,29 @@ void error(const char *msg) {
 }
 
 int connect_server(void) {
-	struct hostent *server;
 	struct sockaddr_in serv_addr;
-	int sockfd;
+	int sockfd, ret;
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0)
-		error("ERROR opening socket");
-
-	server = gethostbyname(HOST);
-	if (server == NULL)
-		error("ERROR, no such host");
+	if (sockfd < 0) {
+		if (sockfd == -EINTR)
+			sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		if (sockfd < 0)
+			error("ERROR opening socket");
+	}
 
 	memset(&serv_addr,0,sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(PORT);
-	memcpy(&serv_addr.sin_addr.s_addr,server->h_addr,server->h_length);
+	serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-	if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
-		error("ERROR connecting");
+	ret = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+	if (ret < 0) {
+		if (ret == -EINTR)
+			ret = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+		if (ret < 0)
+			error("ERROR connecting");
+	}
 	return sockfd;
 }
 
@@ -114,8 +119,11 @@ void read_response(int sockfd) {
 	int bytes;
 
 	bytes = read(sockfd,response , 200);
-	if (bytes < 0)
-		error("ERROR reading response from socket");
+	if (bytes < 0) {
+		// If interrupted try again
+		if (bytes == -EINTR)
+			bytes = read(sockfd,response , 200);
+	}
 #if PRINT_RESPONSE
 	printf("%s\n", response);
 #endif
@@ -146,7 +154,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 	/* Client -> connect to server */
 	sockfd = connect_server();
 
-	/* HTTP request and response */
+	/* HTTP request*/
 	write_request(sockfd, data, size);
 	read_response(sockfd);
 
