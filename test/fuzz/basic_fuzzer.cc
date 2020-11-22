@@ -13,7 +13,6 @@
  * make && sudo make install
  *
  * cd ../libhttpserver
- * rm -rf build/*
  * cd build
  * ../configure
  * make && sudo make install
@@ -129,12 +128,20 @@ void read_response(int sockfd) {
 #endif
 }
 
+void cleanup(void)
+{
+	ws.stop();
+}
+
 extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv)
 {
 	ws.register_resource("{arg1|[A-Z]+}/{arg2|(.*)}", &agr);
 	ws.register_resource(R"(.*)", &hwr);
 	hwr.allow_all();
 	agr.allow_all();
+	/* Start the server */
+	ws.start(false);
+	atexit(cleanup);
 	return 0;
 }
 
@@ -148,8 +155,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 		return 0;
 	//if (size)
 		//ws.register_resource(reinterpret_cast<const char *>(data), &agr);
-	/* Start the server */
-	ws.start(false);
 
 	/* Client -> connect to server */
 	sockfd = connect_server();
@@ -162,6 +167,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 	close(sockfd);
 
 	/* Stop the server */
-	ws.stop();
+	//ws.stop();
 	return 0;
 }
