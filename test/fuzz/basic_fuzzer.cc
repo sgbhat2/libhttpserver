@@ -106,13 +106,13 @@ int connect_server(void) {
 	address.sin_port = htons(port);
 	address.sin_addr.s_addr = inet_addr(HOST_IP);
 
+retry:
 	ret = connect(sfd, (struct sockaddr *)&address, sizeof(address));
-	if (ret < 0) {
-		if (ret == -EINTR)
-			ret = connect(sfd, (struct sockaddr *)&address, sizeof(address));
-		if (ret < 0)
-			quit("Failed to connect to server");
-	}
+	if (ret == -EINTR)
+		goto retry;
+	if (ret < 0)
+		quit("Failed to connect to server");
+
 	return sfd;
 }
 
@@ -128,10 +128,12 @@ void write_request(int sfd, const uint8_t *data, size_t size) {
 	msg = fstr.c_str();
 	do {
 		bytes = write(sfd, msg + sent, size - sent);
-		if (bytes < 0 && bytes != -EINTR)
-			quit("Failed to write HTTP request");
 		if (bytes == 0)
 			break;
+		else if (bytes == -EINTR)
+			continue;
+		else if (bytes < 0)
+			quit("Failed to write HTTP request");
 		sent += bytes;
 	} while (sent < size);
 }
@@ -141,11 +143,8 @@ void read_response(int sfd) {
 	int bytes;
 
 	bytes = read(sfd, response , 150);
-	if (bytes < 0) {
-		// If interrupted try again
-		if (bytes == -EINTR)
-			bytes = read(sfd, response , 150);
-	}
+	if (bytes < 0)
+		return;
 #if PRINT_RESPONSE
 	printf("%s\n", response);
 #endif
