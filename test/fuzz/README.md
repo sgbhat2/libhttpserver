@@ -12,7 +12,6 @@ export CFLAGS="-O1 -fno-omit-frame-pointer -gline-tables-only -fsanitize=address
 export CXXFLAGS="-O1 -fno-omit-frame-pointer -gline-tables-only -fsanitize=address -fsanitize-address-use-after-scope -fsanitize=fuzzer-no-link"
 
 cd libmicrohttpd-0.9.71/
-make clean
 ./configure
 make && sudo make install
 
@@ -25,7 +24,7 @@ make && sudo make install
 ## Build the fuzz target
 ```
 cd libhttpserver/test/fuzz
-clang++ $CXXFLAGS basic_fuzzer.cc -o basic_fuzzer -fsanitize=fuzzer,undefined /usr/local/lib/libhttpserver.a /usr/local/lib/libmicrohttpd.a -lgnutls -lnettle -ltasn1 -lidn -I../../src/httpserver -I../../src/
+clang++ $CXXFLAGS basic_fuzzer.cc -o basic_fuzzer -fsanitize=fuzzer,undefined /usr/local/lib/libhttpserver.a /usr/local/lib/libmicrohttpd.a -lgnutls
 ```
 
 ## Run the fuzz target

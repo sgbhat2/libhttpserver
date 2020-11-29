@@ -1,7 +1,7 @@
 /*
  * Fuzzing test code for libhttpserver using LLVM's libFuzzer
  * (http://llvm.org/docs/LibFuzzer.html)
- * Refer README.md for build and run instructions
+ * Refer README.md for build instructions
  */
 
 #include <stdio.h>
