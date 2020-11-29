@@ -108,10 +108,11 @@ int connect_server(void) {
 
 retry:
 	ret = connect(sfd, (struct sockaddr *)&address, sizeof(address));
-	if (ret == -EINTR)
-		goto retry;
-	if (ret < 0)
+	if (ret < 0) {
+		if (errno == EINTR)
+			goto retry;
 		quit("Failed to connect to server");
+	}
 
 	return sfd;
 }
@@ -130,10 +131,11 @@ void write_request(int sfd, const uint8_t *data, size_t size) {
 		bytes = write(sfd, msg + sent, size - sent);
 		if (bytes == 0)
 			break;
-		else if (bytes == -EINTR)
-			continue;
-		else if (bytes < 0)
+		else if (bytes < 0) {
+			if (errno == EINTR)
+				continue;
 			quit("Failed to write HTTP request");
+		}
 		sent += bytes;
 	} while (sent < size);
 }
